@@ -14,15 +14,16 @@ class Question(models.Model):
         verbose_name = "Вопрос"
         verbose_name_plural = "Вопросы"
 
+
 class Questionnaire(models.Model):
     name = models.CharField("Название опросника", max_length=128)
     # start_date = models.DateField("Дата начала опроса")
     time_to_live = models.SmallIntegerField("Срок сбора ответов в днях")
-    content = models.ManyToManyField(
+    questions = models.ManyToManyField(
         Question,
         through="Questionnaire_content"
     )
-    targets = models.ManyToManyField(
+    target_users = models.ManyToManyField(
         User, verbose_name="Сотрудники"
     )
 
@@ -44,3 +45,11 @@ class Questionnaire_content(models.Model):
         verbose_name = "Содержимое опросника"
         verbose_name_plural = "Содержимое опросников"
 
+class Questionnaire_ruslults(models.Model):
+    user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Сотрудник")
+    questionnaire_content = models.ForeignKey(Questionnaire_content, on_delete=models.PROTECT)
+    rusult = models.SmallIntegerField()
+
+    class Meta:
+        verbose_name = "Результат по опроснику"
+        verbose_name_plural = "Результаты по всем опросникам"
