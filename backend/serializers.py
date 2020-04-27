@@ -1,6 +1,15 @@
 from rest_framework import serializers
 
-from .models import Question, Questionnaire, Questionnaire_content
+from django.contrib.auth.models import User
+from .models import Question, Questionnaire, QuestionnaireContent, QuestionnaireResult
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('id', 'username')
+
 
 class QuestionSerializer(serializers.ModelSerializer):  
     
@@ -10,32 +19,32 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 
-class Questionnaire_contentSerializer(serializers.ModelSerializer):
+class QuestionnaireContentSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Questionnaire_content
-        fields = ('question', 'time_to_answer', 'answer_weight')
+        model = QuestionnaireContent
+        fields = ('id', 'question', 'time_to_answer', 'answer_weight')
 
 
 
 class QuestionnaireSerializer(serializers.ModelSerializer):
     
-    questions = Questionnaire_contentSerializer(source='questionnaire_content_set', many=True)
+    questions = QuestionnaireContentSerializer(source='questionnairecontent_set', many=True)
 
     class Meta:
         model = Questionnaire
-        fields = ('id', 'name', 'time_to_live', 'questions', 'target_users')
+        fields = ('id', 'title', 'start_date', 'end_date', 'questions', 'target_users')
     
     def create(self, validated_data):
         questionnaire_content_set = validated_data.pop('questionnaire_content_set')
         questionnaire = Questionnaire.objects.create(
-            name=validated_data['name'],
+            name=validated_data['title'],
             time_to_live=validated_data['time_to_live'],
         )
         questionnaire.target_users.set(validated_data['target_users '])
         for questionnaire_content_od in questionnaire_content_set:
             questionnaire_content = dict(questionnaire_content_od)
-            Questionnaire_content.objects.create(
+            QuestionnaireContent.objects.create(
                 questionnaire=questionnaire,
                 question=questionnaire_content['question'], 
                 time_to_answer=questionnaire_content['time_to_answer'], 
@@ -49,13 +58,21 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
         instance.target_users.set(validated_data.get('target_users', instance.target_users))
         instance.save()
 
-        Questionnaire_content.objects.filter(questionnaire=instance).delete()
-        for questionnaire_content_od in validated_data['questionnaire_content_set']:
+        QuestionnaireContent.objects.filter(questionnaire=instance).delete()
+        for questionnaire_content_od in validated_data['questionnaireContent_set']:
             questionnaire_content = dict(questionnaire_content_od)
-            Questionnaire_content.objects.create(
+            QuestionnaireContent.objects.create(
                 questionnaire=instance, 
                 question=questionnaire_content['question'], 
                 time_to_answer=questionnaire_content['time_to_answer'], 
                 answer_weight=questionnaire_content['answer_weight']
                 )
         return instance
+
+
+class QuestionnaireRusultSerilizer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = QuestionnaireResult
+        fields = '__all__'
+        
