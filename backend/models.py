@@ -6,14 +6,14 @@ from django.contrib.auth.models import User
 from django.contrib.postgres.fields import JSONField
 
 QUESTION_TYPE = [
-    ('T', 'Тест'),
-    ('Q', 'Опрос'),
+    ('O', 'Один'),
+    ('M', 'Много'),
 ]
 
 class Question(models.Model):
     title = models.CharField("Название вопроса", max_length=128)
     content = models.CharField("Содержание вопроса", max_length=255)
-    question_type = models.CharField("Тип вопроса", max_length=2, choices=QUESTION_TYPE, default='Тест')
+    question_type = models.CharField("Количество ответов", max_length=2, choices=QUESTION_TYPE, default='Тест')
     response_options = JSONField("Ответы", default=list)
 
     def __str__(self):
@@ -61,7 +61,7 @@ class QuestionnaireContent(models.Model):
 class QuestionnaireResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Сотрудник")
     questionnaire_content = models.ForeignKey(QuestionnaireContent, on_delete=models.PROTECT)
-    result = models.SmallIntegerField()
+    answer = JSONField(default=list)
 
     class Meta:
         verbose_name = "Результат по опроснику"

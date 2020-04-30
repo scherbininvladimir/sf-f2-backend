@@ -18,13 +18,13 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class QuestionnaireContentSerializer(serializers.ModelSerializer):
+
+    question = QuestionSerializer()
 
     class Meta:
         model = QuestionnaireContent
         fields = ('id', 'question', 'time_to_answer', 'answer_weight')
-
 
 
 class QuestionnaireSerializer(serializers.ModelSerializer):
@@ -38,28 +38,18 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         questionnaire_content_set = validated_data.pop('questionnaire_content_set')
         questionnaire = Questionnaire.objects.create(
-            name=validated_data['title'],
+            title=validated_data['title'],
             time_to_live=validated_data['time_to_live'],
         )
-        questionnaire.target_users.set(validated_data['target_users '])
-        for questionnaire_content_od in questionnaire_content_set:
-            questionnaire_content = dict(questionnaire_content_od)
-            QuestionnaireContent.objects.create(
-                questionnaire=questionnaire,
-                question=questionnaire_content['question'], 
-                time_to_answer=questionnaire_content['time_to_answer'], 
-                answer_weight=questionnaire_content['answer_weight']
-            )
         return questionnaire
 
     def update(self, instance, validated_data):
-        instance.name = validated_data.get('name', instance.name)
-        instance.time_to_live = validated_data.get('time_to_live', instance.time_to_live)
+        instance.name = validated_data.get('title', instance.title)
         instance.target_users.set(validated_data.get('target_users', instance.target_users))
         instance.save()
 
         QuestionnaireContent.objects.filter(questionnaire=instance).delete()
-        for questionnaire_content_od in validated_data['questionnaireContent_set']:
+        for questionnaire_content_od in validated_data['questionnairecontent_set']:
             questionnaire_content = dict(questionnaire_content_od)
             QuestionnaireContent.objects.create(
                 questionnaire=instance, 
@@ -75,4 +65,4 @@ class QuestionnaireRusultSerilizer(serializers.ModelSerializer):
     class Meta:
         model = QuestionnaireResult
         fields = '__all__'
-        
+
