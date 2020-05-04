@@ -1,42 +1,16 @@
 from django.contrib import admin
 from django import forms
-from django_admin_json_editor import JSONEditorWidget
 
-from .models import Question, Questionnaire, QuestionnaireContent
+from .models import Question, Response, Questionnaire, QuestionnaireContent
 
 
-def dynamic_schema(widget):
-    return {
-        'type': 'array',
-        'title': 'Варианты ответов',
-        'items': {
-            'title': "Вариант ответа",
-            'type': 'object',
-            'required': [
-                'option',
-                'is_correct',
-            ],
-            'properties': {
-                'option': {
-                    'title': 'Вариант ответа',
-                    'type': 'string',
-                    'format': 'text',
-                    'minLength': 1,
-                },
-                'is_correct': {
-                    'title': 'Верный ответ',
-                    'type': 'boolean',
-                }
-             }
-        }
-    }
+class ResponseTInline(admin.TabularInline):
+    model = Response
+
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    def get_form(self, request, obj=None, **kwargs):
-        widget = JSONEditorWidget(dynamic_schema, False)
-        form = super().get_form(request, obj, widgets={'response_options': widget}, **kwargs)
-        return form
+    inlines = (ResponseTInline, )
 
     def has_module_permission(self, request):
         return True

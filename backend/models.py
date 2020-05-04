@@ -1,20 +1,24 @@
 from datetime import datetime
-
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.contrib.auth.models import User  
 
-from django.contrib.postgres.fields import JSONField
 
-QUESTION_TYPE = [
+ANSWER_TYPE = [
     ('O', 'Один'),
     ('M', 'Много'),
+]
+
+QUESTION_TYPE = [
+    ('Q', 'Опросник'),
+    ('T', 'Тест'),
 ]
 
 class Question(models.Model):
     title = models.CharField("Название вопроса", max_length=128)
     content = models.CharField("Содержание вопроса", max_length=255)
-    question_type = models.CharField("Количество ответов", max_length=2, choices=QUESTION_TYPE, default='Тест')
-    response_options = JSONField("Ответы", default=list)
+    answers_number = models.CharField("Количество принимаемых ответов", max_length=2, choices=ANSWER_TYPE, default='O')
+    question_type = models.CharField("Тип вопроса", max_length=2, choices=QUESTION_TYPE, default='T')
 
     def __str__(self):
         return self.title
@@ -24,11 +28,25 @@ class Question(models.Model):
         verbose_name_plural = "Вопросы"
 
 
+class Response(models.Model):
+    question = models.ForeignKey(Question, related_name='response', on_delete=models.CASCADE, verbose_name = "Вопрос")
+    response_option = models.CharField("Ответ на вопрос", max_length=255)
+    isCorrect = models.BooleanField("Верный ответ в тестовом вопросе", default=False)
+    answer_weight = models.SmallIntegerField("Вес ответа в опроснике", default=0)  
+    
+
+class AnswerQuestionnaire(models.Model):
+    question = models.ForeignKey(Question, related_name='questionnair_answer', on_delete=models.CASCADE)
+    answer = models.CharField("Ответ на вопрос", max_length=255)
+      
+
+
 class Questionnaire(models.Model):
     title = models.CharField("Название опросника", max_length=128)
     start_date = models.DateField("Дата начала опроса", default=datetime.now, blank=False)
     end_date = models.DateField("Дата окончания опроса", default=datetime.now, blank=False)
     description = models.TextField(blank=True, null=True)
+    allow_answer_modify = models.BooleanField("Разрешить пользователю менять сохраненные ответы", default=False)
     questions = models.ManyToManyField(
         Question,
         through="QuestionnaireContent"

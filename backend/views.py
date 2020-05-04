@@ -12,13 +12,13 @@ class UserList(generics.ListAPIView):
     serializer_class = UserSerializer
 
 
-class QuestionList(generics.ListCreateAPIView):  
+class QuestionCreate(generics.ListCreateAPIView):  
     
     queryset = Question.objects.all()  
     serializer_class = QuestionSerializer
 
 
-class QuestionDetail(generics.RetrieveUpdateAPIView):  
+class QuestionDetail(generics.RetrieveUpdateDestroyAPIView):  
     
     queryset = Question.objects.all()  
     serializer_class = QuestionSerializer
@@ -29,10 +29,7 @@ class QuestionnaireList(generics.ListAPIView):
     serializer_class = QuestionnaireSerializer
 
     def get_queryset(self):
-        if self.request.user.is_staff:
-            return get_list_or_404(Questionnaire)
-        else:
-            return get_list_or_404(Questionnaire, target_users=self.request.user)
+        return Questionnaire.objects.filter(target_users=self.request.user)
 
 
 class QuestionnaireDetail(generics.RetrieveAPIView):
@@ -52,7 +49,7 @@ class ResultDetail(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         questionnaire_content = get_object_or_404(QuestionnaireContent, pk=self.kwargs['questionnaire_content_pk'])
-        return get_object_or_404(QuestionnaireResult, questionnaire_content=questionnaire_content, user=self.request.user)
+        return QuestionnaireResult.objects.filter(questionnaire_content=questionnaire_content, user=self.request.user).first()
 
 
 class ResultCreate(generics.CreateAPIView):
@@ -61,30 +58,12 @@ class ResultCreate(generics.CreateAPIView):
     serializer_class = QuestionnaireRusultSerilizer
 
 
+class ResultList(generics.ListAPIView):
 
+    serializer_class = QuestionnaireRusultSerilizer
 
-# class QuestionnaireResultList(generics.ListCreateAPIView):
-    
-#     serializer_class = QuestionnaireRusultSerilizer
+    def get_queryset(self):
+        questionnaire = get_object_or_404(Questionnaire, pk=self.kwargs['questionnaire_pk'])
+        questionnaire_content = QuestionnaireContent.objects.filter(questionnaire=questionnaire)
+        return QuestionnaireResult.objects.filter(questionnaire_content__in=questionnaire_content, user=self.request.user)
 
-#     def get_queryset(self):
-#         questionnaire = get_object_or_404(Questionnaire, pk=self.kwargs['questionnaire_pk'])
-#         questionnaire_contents = QuestionnaireContent.objects.filter(questionnaire=questionnaire)
-#         return QuestionnaireResult.objects.filter(questionnaire_content__in=questionnaire_contents)       
-    
-
-# class QuestionnaireUserResultList(generics.ListCreateAPIView):
-    
-#     serializer_class = QuestionnaireRusultSerilizer
-    
-#     def get_queryset(self):
-#         user = get_object_or_404(User, id=self.kwargs['user_pk'])
-#         return QuestionnaireResult.objects.filter(user=user)
-    
-#     def has_permission(self, request, view):
-#         if request.user.is_staff:
-#             return True
-#         else:
-#             if self.kwargs['user_pk'] == request.user.pk:
-#                 return True
-#         return False
