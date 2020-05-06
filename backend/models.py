@@ -2,7 +2,7 @@ from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.contrib.auth.models import User  
-
+from django.utils import timezone
 
 ANSWER_TYPE = [
     ('O', 'Один'),
@@ -40,7 +40,6 @@ class AnswerQuestionnaire(models.Model):
     answer = models.CharField("Ответ на вопрос", max_length=255)
       
 
-
 class Questionnaire(models.Model):
     title = models.CharField("Название опросника", max_length=128)
     start_date = models.DateField("Дата начала опроса", default=datetime.now, blank=False)
@@ -54,7 +53,14 @@ class Questionnaire(models.Model):
     target_users = models.ManyToManyField(
         User, verbose_name="Сотрудники"
     )
-
+    
+    @property
+    def isOpen(self):
+        if self.end_date >= datetime.today().date(): 
+            return True
+        else:
+            return False
+        
     def __str__(self):
         return self.title
 
@@ -76,10 +82,35 @@ class QuestionnaireContent(models.Model):
         verbose_name = "Содержимое опросника"
         verbose_name_plural = "Содержимое опросников"
 
+
 class QuestionnaireResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Сотрудник")
     questionnaire_content = models.ForeignKey(QuestionnaireContent, on_delete=models.PROTECT)
     answer = JSONField(default=list)
+
+    @property
+    def score(self):
+        question = self.questionnaire_content.question
+        answerList = []
+        if not isinstance (self.answer, list):
+            answerList.append(self.answer)
+        else:
+            answerList = self.answer
+        response = Response.objects.filter(question=question)
+        answer_score = 0
+        for i in response:
+            if self.questionnaire_content.question.question_type == 'Q':
+                for j in answerList:
+                    if i.response_option == j:
+                        answer_score += i.answer_weight
+            if self.questionnaire_content.question.question_type == 'T':
+                for j in answerList:
+                    if i.response_option == j:
+                        if i.isCorrect:
+                            answer_score += 1
+                        else:
+                            answer_score -= 1
+        return answer_score * self.questionnaire_content.answer_weight
 
     class Meta:
         verbose_name = "Результат по опроснику"

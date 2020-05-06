@@ -1,27 +1,38 @@
 from django.shortcuts import get_object_or_404, get_list_or_404
-from .serializers import QuestionSerializer, QuestionnaireSerializer, QuestionnaireRusultSerilizer, UserSerializer
+from .serializers import (
+    QuestionnaireSerializer, 
+    QuestionnaireContentSerializer, 
+    QuestionnaireRusultSerilizer, 
+    AdminResultSerializer,
+)
 from rest_framework import generics  
 
 from .models import Question, Questionnaire, QuestionnaireResult, QuestionnaireContent
 from django.contrib.auth.models import User  
 
 
-class UserList(generics.ListAPIView):
+# class AdminUserList(generics.ListAPIView):
     
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+#     queryset = User.objects.all()
+#     serializer_class = UserSerializer
 
 
-class QuestionCreate(generics.ListCreateAPIView):  
+# class AdminQuestionnaireList(generics.ListAPIView):
+
+#     queryset = Questionnaire.objects.all()
+#     serializer_class = QuestionnaireContentSerializer
+
+
+# class QuestionCreate(generics.ListCreateAPIView):  
     
-    queryset = Question.objects.all()  
-    serializer_class = QuestionSerializer
+#     queryset = Question.objects.all()  
+#     serializer_class = QuestionSerializer
 
 
-class QuestionDetail(generics.RetrieveUpdateDestroyAPIView):  
+# class QuestionDetail(generics.RetrieveUpdateDestroyAPIView):  
     
-    queryset = Question.objects.all()  
-    serializer_class = QuestionSerializer
+#     queryset = Question.objects.all()  
+#     serializer_class = QuestionSerializer
 
 
 class QuestionnaireList(generics.ListAPIView):
@@ -32,15 +43,13 @@ class QuestionnaireList(generics.ListAPIView):
         return Questionnaire.objects.filter(target_users=self.request.user)
 
 
-class QuestionnaireDetail(generics.RetrieveAPIView):
+class QuestionnaireContentList(generics.ListAPIView):
     
-    serializer_class = QuestionnaireSerializer
+    serializer_class = QuestionnaireContentSerializer
 
-    def get_object(self):
-        if self.request.user.is_staff:
-            return get_object_or_404(Questionnaire, id=self.kwargs['pk'])
-        else:
-            return get_object_or_404(Questionnaire, target_users=self.request.user, id=self.kwargs['pk'])        
+    def get_queryset(self):
+        questionnaire = get_object_or_404(Questionnaire, target_users=self.request.user, id=self.kwargs['pk'])
+        return get_list_or_404(QuestionnaireContent, questionnaire=questionnaire)
 
 
 class ResultDetail(generics.RetrieveUpdateAPIView):
@@ -49,6 +58,7 @@ class ResultDetail(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         questionnaire_content = get_object_or_404(QuestionnaireContent, pk=self.kwargs['questionnaire_content_pk'])
+        print(QuestionnaireResult.objects.filter(questionnaire_content=questionnaire_content, user=self.request.user).first())
         return QuestionnaireResult.objects.filter(questionnaire_content=questionnaire_content, user=self.request.user).first()
 
 
@@ -58,12 +68,28 @@ class ResultCreate(generics.CreateAPIView):
     serializer_class = QuestionnaireRusultSerilizer
 
 
-class ResultList(generics.ListAPIView):
+# class ResultList(generics.ListAPIView):
 
-    serializer_class = QuestionnaireRusultSerilizer
+#     serializer_class = QuestionnaireRusultSerilizer
+
+#     def get_queryset(self):
+#         questionnaire = get_object_or_404(Questionnaire, pk=self.kwargs['questionnaire_pk'])
+#         questionnaire_content = QuestionnaireContent.objects.filter(questionnaire=questionnaire)
+#         return QuestionnaireResult.objects.filter(questionnaire_content__in=questionnaire_content, user=self.request.user)
+
+
+class Statistics(generics.ListAPIView):
+
+    queryset = Questionnaire.objects.all()
+    serializer_class = QuestionnaireSerializer
+
+class StatisticsDetail(generics.ListAPIView):
+
+    queryset = QuestionnaireResult.objects.all()
+    serializer_class = AdminResultSerializer
 
     def get_queryset(self):
+        user = get_object_or_404(User, pk=self.kwargs['user_pk'])
         questionnaire = get_object_or_404(Questionnaire, pk=self.kwargs['questionnaire_pk'])
         questionnaire_content = QuestionnaireContent.objects.filter(questionnaire=questionnaire)
-        return QuestionnaireResult.objects.filter(questionnaire_content__in=questionnaire_content, user=self.request.user)
-
+        return QuestionnaireResult.objects.filter(questionnaire_content__in=questionnaire_content, user=user)
