@@ -46,6 +46,7 @@ class Questionnaire(models.Model):
     end_date = models.DateField("Дата окончания опроса", default=datetime.now, blank=False)
     description = models.TextField(blank=True, null=True)
     allow_answer_modify = models.BooleanField("Разрешить пользователю менять сохраненные ответы", default=False)
+    time_to_answer = models.SmallIntegerField("Время прохождения опроса", default=0)
     questions = models.ManyToManyField(
         Question,
         through="QuestionnaireContent"
@@ -72,8 +73,8 @@ class Questionnaire(models.Model):
 class QuestionnaireContent(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, verbose_name="Вопрос")
     questionnaire = models.ForeignKey(Questionnaire, on_delete=models.CASCADE, verbose_name="Опросник")
-    time_to_answer = models.SmallIntegerField("Время на ответ")
-    answer_weight = models.SmallIntegerField("Вес ответа")
+    time_to_answer = models.SmallIntegerField("Время на ответ", default=0)
+    answer_weight = models.SmallIntegerField("Вес ответа", default=1)
 
     def __str__(self):
         return f"{self.questionnaire} - {self.question} - {self.time_to_answer} - {self.answer_weight}"

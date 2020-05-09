@@ -1,10 +1,15 @@
 from collections import Counter
+import redis
 
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from django.contrib.auth.models import User
 from .models import Question, Response, Questionnaire, QuestionnaireContent, QuestionnaireResult
 
+from inquirer_backend.settings import REDIS_HOST
+
+r = redis.Redis(host=REDIS_HOST, port=6379, db=0)
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -67,7 +72,10 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
 
     def get_number_of_answerred_questions(self, obj):
         questonnnaire_content = QuestionnaireContent.objects.filter(questionnaire = obj)
-        resluts = QuestionnaireResult.objects.filter(questionnaire_content__in = questonnnaire_content, user=self.context.get('request').user)
+        resluts = QuestionnaireResult.objects.filter(
+            questionnaire_content__in = questonnnaire_content, 
+            user=self.context.get('request').user
+        ).exclude(answer=[])
         return resluts.count()
 
     class Meta:
@@ -79,6 +87,7 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
             'end_date', 
             'description', 
             'allow_answer_modify', 
+            'time_to_answer',
             'questions', 
             'isOpen',
             'number_of_questions',
@@ -98,10 +107,46 @@ class QuestionnaireContentSerializer(serializers.ModelSerializer):
 
 
 class QuestionnaireRusultSerilizer(serializers.ModelSerializer):
-    
+
+    def create(self, validated_data):
+        questionnaire = validated_data["questionnaire_content"].questionnaire
+        question = validated_data["questionnaire_content"]
+        questionnaire_time_to_answer = questionnaire.time_to_answer
+        queston_time_to_answer = question.time_to_answer
+        user = validated_data["user"]
+        questionnaire_content = QuestionnaireContent.objects.filter(questionnaire=questionnaire)
+        is_questionnaire_in_results = QuestionnaireResult.objects.filter(user=user, questionnaire_content__in=questionnaire_content)
+        if questionnaire_time_to_answer and not is_questionnaire_in_results:
+            r.set(
+                f'{validated_data["user"].id}/{questionnaire.id}',
+                questionnaire_time_to_answer,
+                ex=questionnaire_time_to_answer
+            )
+        if queston_time_to_answer:
+            r.set(
+                f'{validated_data["user"].id}/{validated_data["questionnaire_content"].id}',
+                queston_time_to_answer, 
+                ex=queston_time_to_answer
+            )
+        return QuestionnaireResult.objects.create(**validated_data)
+
+    def validate_answer(self, value):
+        if self.instance:
+            need_to_check = self.instance.questionnaire_content.time_to_answer
+            is_time_out = not r.get(f'{self.instance.user.id}/{self.instance.questionnaire_content.id}')
+            if need_to_check and is_time_out:
+                raise serializers.ValidationError("Время вышло.")
+        return value
+                
     class Meta:
         model = QuestionnaireResult
         fields = ('id', 'answer', 'user', 'questionnaire_content')
+        validators = [
+            UniqueTogetherValidator(
+                queryset=QuestionnaireResult.objects.all(),
+                fields=['user', 'questionnaire_content']
+            )
+        ]
 
 
 class AdminResultSerializer(serializers.ModelSerializer):
