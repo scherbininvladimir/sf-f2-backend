@@ -4,6 +4,7 @@ import redis
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
 from .models import Question, Response, Questionnaire, QuestionnaireContent, QuestionnaireResult
 
@@ -22,23 +23,66 @@ class ResponseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Response
-        fields = '__all__'
+        fields = ('response_option', 'isCorrect', 'answer_weight',)
 
 
 class QuestionSerializer(serializers.ModelSerializer):  
     
     response = ResponseSerializer(many=True)
+
+    def create(self, validated_data):
+        response_data = validated_data.pop('response')
+        question = Question.objects.create(
+            title = validated_data.get('title'),
+            content = validated_data.get('content'),
+            answers_number = validated_data.get('answers_number'),
+            question_type = validated_data.get('question_type')
+        )
+        for response in response_data:
+            Response.objects.create(question=question, **response)
+        return question
+    
+
+    def update(self, instance, validated_data):
+        response_data = validated_data.pop('response')
+
+        instance.title = validated_data.get('title', instance.title)
+        instance.content = validated_data.get('content', instance.content)
+        instance.answers_number = validated_data.get('answers_number', instance.answers_number)
+        instance.question_type = validated_data.get('question_type', instance.question_type)
+        instance.save()
+
+        response_options = [response.response_option for response in Response.objects.filter(question=instance)]
+        response_options_form = [response["response_option"] for response in response_data]
+        
+        response_options_for_update = set(response_options).intersection(set(response_options_form))
+        response_options_for_delete = set(response_options).difference(set(response_options_form))
+
+        for response_form in response_data:
+            if response_form["response_option"] in response_options_for_update:
+                response = Response.objects.get(question=instance, response_option=response_form["response_option"])
+                response.response_option = response_form.get('response_option', response.response_option)
+                response.isCorrect = response_form.get('isCorrect', response.isCorrect)
+                response.answer_weight = response_form.get('answer_weight', response.answer_weight)
+                response.save()
+            else:
+                Response.objects.create(question=instance, **response_form)
+        
+        Response.objects.filter(question=instance, response_option__in=response_options_for_delete).delete()
+        
+        return instance
     
     class Meta:  
         model = Question  
         fields = (
+            'id',
             'title', 
             'content', 
             'answers_number', 
             'question_type', 
             'response', 
         )
-
+        
 
 class QuestionnaireSerializer(serializers.ModelSerializer):
 

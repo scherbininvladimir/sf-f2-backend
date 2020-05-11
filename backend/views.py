@@ -4,11 +4,27 @@ from .serializers import (
     QuestionnaireContentSerializer, 
     QuestionnaireRusultSerilizer, 
     AdminResultSerializer,
+    QuestionSerializer,
 )
 from rest_framework import generics  
 
 from .models import Question, Questionnaire, QuestionnaireResult, QuestionnaireContent
 from django.contrib.auth.models import User  
+
+
+class AdminQuestionList(generics.ListCreateAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
+
+
+class AdminQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
+
+class AdminQuestionnaireList(generics.ListAPIView):
+
+    queryset = Questionnaire.objects.all()
+    serializer_class = QuestionnaireSerializer
 
 
 class QuestionnaireList(generics.ListAPIView):
