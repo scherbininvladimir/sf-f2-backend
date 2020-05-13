@@ -1,3 +1,5 @@
+import datetime
+
 from collections import Counter
 import redis
 
@@ -82,13 +84,13 @@ class QuestionSerializer(serializers.ModelSerializer):
             'question_type', 
             'response', 
         )
-        
+
 
 class QuestionnaireSerializer(serializers.ModelSerializer):
 
-    number_of_questions = serializers.SerializerMethodField('get_number_of_questions')
-    number_of_answerred_questions = serializers.SerializerMethodField('get_number_of_answerred_questions')
-    users_scores = serializers.SerializerMethodField() 
+    number_of_questions = serializers.SerializerMethodField()
+    number_of_answerred_questions = serializers.SerializerMethodField()
+    users_scores = serializers.SerializerMethodField()
 
     def get_users_scores(self, obj):
         questionnaire_content = QuestionnaireContent.objects.filter(questionnaire = obj)
@@ -121,6 +123,79 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
             user=self.context.get('request').user
         ).exclude(answer=[])
         return resluts.count()
+    
+    def create(self, validated_data):
+        print(validated_data)
+        questions_data = validated_data.pop('questions')
+        questionnaire = Questionnaire.objects.create(
+            title = validated_data.get('title'),
+            start_date = validated_data.get('start_date'),
+            end_date = validated_data.get('end_date'),
+            description = validated_data.get('description'),
+            time_to_answer = validated_data.get('time_to_answer'),
+            allow_answer_modify = validated_data.get('allow_answer_modify'),
+        )
+        for question_in_questionnaire in questions_data:
+            question = Question.objects.get(id=question_in_questionnaire["question"]["id"])
+            QuestionnaireContent.objects.create(
+                question=question,
+                questionnaire=questionnaire, 
+                time_to_answer = question_in_questionnaire["time_to_answer"],
+                answer_weight = question_in_questionnaire["answer_weight"],
+            )
+        return questionnaire
+    
+    def update(self, instance, validated_data):
+        questions_data = validated_data.pop('questions')
+        instance.title = validated_data.get('title', instance.title)
+        instance.start_date = validated_data.get('start_date', instance.start_date)
+        instance.end_date = validated_data.get('end_date', instance.end_date)
+        instance.description = validated_data.get('description', instance.description)
+        instance.allow_answer_modify = validated_data.get('allow_answer_modify', instance.allow_answer_modify)
+        instance.time_to_answer = validated_data.get('time_to_answer', instance.time_to_answer)
+        instance.save()
+        
+        questions_in_questionnaire_db = [q.id for q in QuestionnaireContent.objects.filter(questionnaire=instance)]
+        questions_in_questionnaire_form = [q.get("id") for q in questions_data]
+        
+        questions_in_questionnaire_for_update = set(questions_in_questionnaire_db).intersection(set(questions_in_questionnaire_form))
+        questions_in_questionnaire_delete = set(questions_in_questionnaire_db).difference(set(questions_in_questionnaire_form))
+        
+        for question_in_questionnaire_form in questions_data:
+            if question_in_questionnaire_form.get("id") in questions_in_questionnaire_for_update:
+                questions_in_questionnaire = QuestionnaireContent.objects.get(id=question_in_questionnaire_form["id"])
+                question = Question.objects.get(id=question_in_questionnaire_form["question"]["id"])                
+                questions_in_questionnaire.question = question                
+                questions_in_questionnaire.time_to_answer = question_in_questionnaire_form.get('time_to_answer', questions_in_questionnaire.time_to_answer)
+                questions_in_questionnaire.answer_weight = question_in_questionnaire_form.get('answer_weight', questions_in_questionnaire.answer_weight)
+                questions_in_questionnaire.save()
+            else:
+                question = Question.objects.get(id=question_in_questionnaire_form["question"]["id"])
+                QuestionnaireContent.objects.create(question=question, questionnaire=instance)
+        
+        QuestionnaireContent.objects.filter(id__in=questions_in_questionnaire_delete).delete()
+
+        return instance
+    
+    def to_representation(self, instance):
+        q = super().to_representation(instance)
+        q['questions'] = []
+        for question_in_questionnaire in QuestionnaireContent.objects.filter(questionnaire=instance):
+            q['questions'].append({
+                "id": question_in_questionnaire.id,
+                "question": {
+                    "id": question_in_questionnaire.question.id,
+                    "title": question_in_questionnaire.question.title,
+                },
+                "time_to_answer": question_in_questionnaire.time_to_answer,
+                "answer_weight": question_in_questionnaire.answer_weight,
+            })
+        return q
+    
+    def to_internal_value(self, data):
+        q = super().to_internal_value(data)
+        q['questions'] = data["questions"]
+        return q            
 
     class Meta:
         model = Questionnaire
@@ -132,7 +207,7 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
             'description', 
             'allow_answer_modify', 
             'time_to_answer',
-            'questions', 
+            'questions',
             'isOpen',
             'number_of_questions',
             'number_of_answerred_questions',

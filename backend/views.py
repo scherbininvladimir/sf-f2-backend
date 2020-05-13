@@ -13,16 +13,25 @@ from django.contrib.auth.models import User
 
 
 class AdminQuestionList(generics.ListCreateAPIView):
+    
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
 
 
 class AdminQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
+    
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
 
-class AdminQuestionnaireList(generics.ListAPIView):
 
+class AdminQuestionnaireList(generics.ListCreateAPIView):
+
+    queryset = Questionnaire.objects.all()
+    serializer_class = QuestionnaireSerializer
+
+
+class AdminQuestionnaireDetail(generics.RetrieveUpdateDestroyAPIView):
+    
     queryset = Questionnaire.objects.all()
     serializer_class = QuestionnaireSerializer
 

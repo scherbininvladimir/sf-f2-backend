@@ -42,8 +42,8 @@ class AnswerQuestionnaire(models.Model):
 
 class Questionnaire(models.Model):
     title = models.CharField("Название опросника", max_length=128)
-    start_date = models.DateField("Дата начала опроса", default=datetime.now, blank=False)
-    end_date = models.DateField("Дата окончания опроса", default=datetime.now, blank=False)
+    start_date = models.DateField("Дата начала опроса", default=datetime.now, blank=True)
+    end_date = models.DateField("Дата окончания опроса", default=datetime.now, blank=True)
     description = models.TextField(blank=True, null=True)
     allow_answer_modify = models.BooleanField("Разрешить пользователю менять сохраненные ответы", default=False)
     time_to_answer = models.SmallIntegerField("Время прохождения опроса", default=0)
