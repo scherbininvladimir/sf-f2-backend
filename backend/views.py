@@ -6,19 +6,24 @@ from .serializers import (
     AdminResultSerializer,
     QuestionSerializer,
 )
-from rest_framework import generics  
+from rest_framework import generics 
+from rest_framework.permissions import IsAdminUser
 
 from .models import Question, Questionnaire, QuestionnaireResult, QuestionnaireContent
 from django.contrib.auth.models import User  
 
 
 class AdminQuestionList(generics.ListCreateAPIView):
+
+    permission_classes = [IsAdminUser]
     
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
 
 
 class AdminQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
+
+    permission_classes = [IsAdminUser]
     
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
@@ -26,14 +31,39 @@ class AdminQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
 
 class AdminQuestionnaireList(generics.ListCreateAPIView):
 
+    permission_classes = [IsAdminUser]
+
     queryset = Questionnaire.objects.all()
     serializer_class = QuestionnaireSerializer
 
 
 class AdminQuestionnaireDetail(generics.RetrieveUpdateDestroyAPIView):
+
+    permission_classes = [IsAdminUser]
     
     queryset = Questionnaire.objects.all()
     serializer_class = QuestionnaireSerializer
+
+
+class AdminResults(generics.ListAPIView):
+
+    permission_classes = [IsAdminUser]
+
+    queryset = Questionnaire.objects.all()
+    serializer_class = QuestionnaireSerializer
+
+class AdminResultDetail(generics.ListAPIView):
+
+    permission_classes = [IsAdminUser]
+
+    queryset = QuestionnaireResult.objects.all()
+    serializer_class = AdminResultSerializer
+
+    def get_queryset(self):
+        user = get_object_or_404(User, pk=self.kwargs['user_pk'])
+        questionnaire = get_object_or_404(Questionnaire, pk=self.kwargs['questionnaire_pk'])
+        questionnaire_content = QuestionnaireContent.objects.filter(questionnaire=questionnaire)
+        return QuestionnaireResult.objects.filter(questionnaire_content__in=questionnaire_content, user=user)
 
 
 class QuestionnaireList(generics.ListAPIView):
@@ -66,20 +96,3 @@ class ResultCreate(generics.CreateAPIView):
     
     queryset = User.objects.all()
     serializer_class = QuestionnaireRusultSerilizer
-
-
-class Statistics(generics.ListAPIView):
-
-    queryset = Questionnaire.objects.all()
-    serializer_class = QuestionnaireSerializer
-
-class StatisticsDetail(generics.ListAPIView):
-
-    queryset = QuestionnaireResult.objects.all()
-    serializer_class = AdminResultSerializer
-
-    def get_queryset(self):
-        user = get_object_or_404(User, pk=self.kwargs['user_pk'])
-        questionnaire = get_object_or_404(Questionnaire, pk=self.kwargs['questionnaire_pk'])
-        questionnaire_content = QuestionnaireContent.objects.filter(questionnaire=questionnaire)
-        return QuestionnaireResult.objects.filter(questionnaire_content__in=questionnaire_content, user=user)
