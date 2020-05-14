@@ -6,8 +6,10 @@ from .serializers import (
     AdminResultSerializer,
     QuestionSerializer,
 )
-from rest_framework import generics 
+from rest_framework import generics
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
 
 from .models import Question, Questionnaire, QuestionnaireResult, QuestionnaireContent
 from django.contrib.auth.models import User  
@@ -27,6 +29,17 @@ class AdminQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
     
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
+
+
+class PictureUploadView(APIView):
+
+    def put(self, request, filename, question_id, format=None):
+        picture = request.data['file']
+        print(picture)
+        question = get_object_or_404(Question, id=question_id)
+        question.picture = picture
+        question.save()
+        return Response(status=204)
 
 
 class AdminQuestionnaireList(generics.ListCreateAPIView):

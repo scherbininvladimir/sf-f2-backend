@@ -80,10 +80,12 @@ class QuestionSerializer(serializers.ModelSerializer):
             'id',
             'title', 
             'content', 
+            'picture',
             'answers_number', 
             'question_type', 
             'response', 
         )
+        read_only_fields = ('picture',)
 
 
 class QuestionnaireSerializer(serializers.ModelSerializer):

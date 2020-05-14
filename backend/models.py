@@ -17,6 +17,7 @@ QUESTION_TYPE = [
 class Question(models.Model):
     title = models.CharField("Название вопроса", max_length=128)
     content = models.CharField("Содержание вопроса", max_length=255)
+    picture = models.ImageField(upload_to='images/%Y/%m/%d', blank=True)
     answers_number = models.CharField("Количество принимаемых ответов", max_length=2, choices=ANSWER_TYPE, default='O')
     question_type = models.CharField("Тип вопроса", max_length=2, choices=QUESTION_TYPE, default='T')
 
