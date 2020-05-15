@@ -1,0 +1,23 @@
+version: '3.3'
+
+services:
+    web:
+        container_name: web
+        build: .
+        command: gunicorn --workers 4 --bind 0.0.0.0:8000 inquirer_backend.wsgi
+        ports:
+            - 8000:8000
+        depends_on:
+            - redis
+            - db
+    
+    redis:
+        container_name: redis_f2
+        image: redis
+
+    db:
+        container_name: postgres_f2
+        image: postgres
+        environment: 
+            POSTGRES_PASSWORD: Ab12345678
+    

@@ -31,6 +31,12 @@ class ResponseSerializer(serializers.ModelSerializer):
 class QuestionSerializer(serializers.ModelSerializer):  
     
     response = ResponseSerializer(many=True)
+    picture = serializers.SerializerMethodField()
+
+    def get_picture(self, obj):
+        if obj.picture:
+            return obj.picture.url
+        return None
 
     def create(self, validated_data):
         response_data = validated_data.pop('response')
@@ -85,7 +91,6 @@ class QuestionSerializer(serializers.ModelSerializer):
             'question_type', 
             'response', 
         )
-        read_only_fields = ('picture',)
 
 
 class QuestionnaireSerializer(serializers.ModelSerializer):
