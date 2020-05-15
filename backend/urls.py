@@ -10,6 +10,7 @@ from backend.views import (
     AdminQuestionnaireDetail,
     AdminResults,
     AdminResultDetail,
+    AdminUsers,
 )
 from django.urls import path  
 
@@ -22,6 +23,7 @@ urlpatterns = [
     path('result/update/<int:questionnaire_content_pk>', ResultDetail.as_view(), name='result-update'),
     path('admin/stat/', AdminResults.as_view(), name='statistics'),
     path('admin/stat/<int:user_pk>/<int:questionnaire_pk>', AdminResultDetail.as_view(), name='statistics'),
+    path('admin/users/', AdminUsers.as_view(), name='admin-users'),
     path('admin/questions/', AdminQuestionList.as_view(), name='admin-questions'),
     path('admin/questions/<int:pk>', AdminQuestionDetail.as_view(), name='admin-question'),
     path('admin/question_image/<filename>/<int:question_id>', PictureUploadView.as_view(), name='admin-question-image'),

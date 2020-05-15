@@ -142,6 +142,7 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
             time_to_answer = validated_data.get('time_to_answer'),
             allow_answer_modify = validated_data.get('allow_answer_modify'),
         )
+        questionnaire.target_users.set(validated_data.get('target_users'))
         for question_in_questionnaire in questions_data:
             question = Question.objects.get(id=question_in_questionnaire["question"]["id"])
             QuestionnaireContent.objects.create(
@@ -160,6 +161,8 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
         instance.description = validated_data.get('description', instance.description)
         instance.allow_answer_modify = validated_data.get('allow_answer_modify', instance.allow_answer_modify)
         instance.time_to_answer = validated_data.get('time_to_answer', instance.time_to_answer)
+        instance.target_users.clear()
+        instance.target_users.set(validated_data.get('target_users'))
         instance.save()
         
         questions_in_questionnaire_db = [q.id for q in QuestionnaireContent.objects.filter(questionnaire=instance)]
@@ -214,6 +217,7 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
             'description', 
             'allow_answer_modify', 
             'time_to_answer',
+            'target_users',
             'questions',
             'isOpen',
             'number_of_questions',

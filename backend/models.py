@@ -53,7 +53,9 @@ class Questionnaire(models.Model):
         through="QuestionnaireContent"
     )
     target_users = models.ManyToManyField(
-        User, verbose_name="Сотрудники"
+        User,
+        verbose_name="Сотрудники",
+        blank=True
     )
     
     @property

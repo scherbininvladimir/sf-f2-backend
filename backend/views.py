@@ -5,6 +5,7 @@ from .serializers import (
     QuestionnaireRusultSerilizer, 
     AdminResultSerializer,
     QuestionSerializer,
+    UserSerializer,
 )
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -13,6 +14,14 @@ from rest_framework.response import Response
 
 from .models import Question, Questionnaire, QuestionnaireResult, QuestionnaireContent
 from django.contrib.auth.models import User  
+
+
+class AdminUsers(generics.ListAPIView):
+
+    permission_classes = [IsAdminUser]
+    
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 
 class AdminQuestionList(generics.ListCreateAPIView):
