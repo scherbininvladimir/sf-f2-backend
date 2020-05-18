@@ -88,8 +88,8 @@ class QuestionnaireContent(models.Model):
 
 
 class QuestionnaireResult(models.Model):
-    user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Сотрудник")
-    questionnaire_content = models.ForeignKey(QuestionnaireContent, on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Сотрудник")
+    questionnaire_content = models.ForeignKey(QuestionnaireContent, on_delete=models.CASCADE)
     answer = JSONField(default=list)
 
     @property

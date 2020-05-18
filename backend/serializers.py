@@ -241,22 +241,20 @@ class QuestionnaireRusultSerilizer(serializers.ModelSerializer):
     def create(self, validated_data):
         questionnaire = validated_data["questionnaire_content"].questionnaire
         question = validated_data["questionnaire_content"]
-        questionnaire_time_to_answer = questionnaire.time_to_answer
-        queston_time_to_answer = question.time_to_answer
         user = validated_data["user"]
         questionnaire_content = QuestionnaireContent.objects.filter(questionnaire=questionnaire)
         is_questionnaire_in_results = QuestionnaireResult.objects.filter(user=user, questionnaire_content__in=questionnaire_content)
-        if questionnaire_time_to_answer and not is_questionnaire_in_results:
+        if questionnaire.time_to_answer and not is_questionnaire_in_results:
             r.set(
                 f'{validated_data["user"].id}/{questionnaire.id}',
-                questionnaire_time_to_answer,
-                ex=questionnaire_time_to_answer
+                questionnaire.time_to_answer,
+                ex=questionnaire.time_to_answer
             )
-        if queston_time_to_answer:
+        if question.time_to_answer:
             r.set(
                 f'{validated_data["user"].id}/{validated_data["questionnaire_content"].id}',
-                queston_time_to_answer, 
-                ex=queston_time_to_answer
+                question.time_to_answer, 
+                ex=question.time_to_answer
             )
         return QuestionnaireResult.objects.create(**validated_data)
 
